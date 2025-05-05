@@ -19,20 +19,36 @@ model = YOLO(MODEL_PATH)
 
 app = FastAPI()
 
+@app.get("/status")
+def status():
+    return {"status": "Server is up and running!"}
+
 @app.post("/predict/")
 async def predict(file: UploadFile = File(...)):
-    contents = await file.read()
-    image = Image.open(io.BytesIO(contents)).convert("RGB")
-    
-    results = model(image)
-    output = []
+    try:
+        print(f"Received file: {file.filename}")
+        contents = await file.read()
+        print("File read successfully, converting to image...")
+        image = Image.open(io.BytesIO(contents)).convert("RGB")
+        print("Image loaded successfully")
 
-    for r in results:
-        for cls, conf, box in zip(r.boxes.cls, r.boxes.conf, r.boxes.xyxy):
-            output.append({
-                "class": model.names[int(cls)],
-                "confidence": float(conf),
-                "bbox": box.tolist()
-            })
+        results = model(image)
+        output = []
+
+        print(f"Results from model: {results}")
+
+        for r in results:
+            for cls, conf, box in zip(r.boxes.cls, r.boxes.conf, r.boxes.xyxy):
+                output.append({
+                    "class": model.names[int(cls)],
+                    "confidence": float(conf),
+                    "bbox": box.tolist()
+                })
+        
+        print("Prediction complete, returning results")
+        return {"results": output}
     
-    return {"results": output}
+    except Exception as e:
+        print(f"Error during prediction: {e}")
+        return {"error": str(e)}
+
