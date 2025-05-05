@@ -19,6 +19,10 @@ model = YOLO(MODEL_PATH)
 
 app = FastAPI()
 
+@app.get("/")
+def read_root():
+    return {"message": "YOLOv8 API is running"}
+
 @app.get("/status")
 def status():
     return {"status": "Server is up and running!"}
