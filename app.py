@@ -16,6 +16,12 @@ if not os.path.exists(MODEL_PATH):
         f.write(response.content)
     print("Download complete.")
 
+# Verify model file size and content
+if os.path.getsize(MODEL_PATH) < 50000000:  # Check for a minimum size (50MB)
+    print("Warning: Model file size seems too small!")
+else:
+    print(f"Model file ({MODEL_PATH}) size is valid.")
+
 # Load the YOLOv8 model
 model = YOLO(MODEL_PATH)
 
