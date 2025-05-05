@@ -1,28 +1,20 @@
+import os
+import gdown
 from fastapi import FastAPI, UploadFile, File
 from ultralytics import YOLO
 from PIL import Image
 import io
-import os
-import requests
 
 MODEL_PATH = "yolov8m-seg.pt"
-MODEL_URL = "https://drive.google.com/uc?export=download&id=1VDfv8NS_6-t9_AG-gTz1NrllOaRiAEE5"
+GDRIVE_ID = "1VDfv8NS_6-t9_AG-gTz1NrllOaRiAEE5"
 
-# Automatically download the model if it's not already present
 if not os.path.exists(MODEL_PATH):
-    print("Model not found. Downloading...")
-    response = requests.get(MODEL_URL)
-    with open(MODEL_PATH, "wb") as f:
-        f.write(response.content)
+    print("Model not found. Downloading via gdown...")
+    gdown.download(id=GDRIVE_ID, output=MODEL_PATH, quiet=False)
     print("Download complete.")
+    
+print(f"Model size: {os.path.getsize(MODEL_PATH) / 1024**2:.2f} MB")
 
-# Verify model file size and content
-if os.path.getsize(MODEL_PATH) < 50000000:  # Check for a minimum size (50MB)
-    print("Warning: Model file size seems too small!")
-else:
-    print(f"Model file ({MODEL_PATH}) size is valid.")
-
-# Load the YOLOv8 model
 model = YOLO(MODEL_PATH)
 
 app = FastAPI()
