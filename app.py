@@ -76,3 +76,7 @@ async def predict(file: UploadFile = File(...)):
     except Exception as e:
         print(f"Error during prediction: {e}")
         raise HTTPException(status_code=500, detail=f"Internal Server Error: {e}")
+        
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run("app:app", host="0.0.0.0", port=8000)
