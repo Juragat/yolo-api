@@ -4,6 +4,7 @@ from fastapi import FastAPI, UploadFile, File
 from ultralytics import YOLO
 from PIL import Image
 import io
+from fastapi.middleware.cors import CORSMiddleware
 
 # === Constants ===
 MODEL_PATH = "yolov8m-seg.pt"
@@ -23,6 +24,14 @@ model = YOLO(MODEL_PATH)
 # === Create FastAPI app ===
 app = FastAPI()
 
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # You can restrict this to your frontend domain
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 @app.get("/")
 def read_root():
     return {"message": "YOLOv8 API is running"}
@@ -33,16 +42,22 @@ def status():
 
 @app.post("/predict/")
 async def predict(file: UploadFile = File(...)):
+    if not file:
+        raise HTTPException(status_code=400, detail="No file uploaded.")
+
     try:
         print(f"Received file: {file.filename}")
         contents = await file.read()
+
+        if not contents:
+            raise HTTPException(status_code=400, detail="Uploaded file is empty.")
+
         print("File read successfully, converting to image...")
-
         image = Image.open(io.BytesIO(contents)).convert("RGB")
-        image = image.resize((640, 640))  # Resize to reduce CPU load
-        print("Image loaded and resized successfully")
+        image = image.resize((640, 640))
 
-        results = model.predict(image, stream=False)  # Prevent lazy loading
+        print("Image loaded successfully")
+        results = model.predict(image, stream=False)
         output = []
 
         for r in results:
@@ -60,4 +75,4 @@ async def predict(file: UploadFile = File(...)):
 
     except Exception as e:
         print(f"Error during prediction: {e}")
-        return {"error": str(e)}
+        raise HTTPException(status_code=500, detail=f"Internal Server Error: {e}")
