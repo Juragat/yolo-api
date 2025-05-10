@@ -5,6 +5,7 @@ from ultralytics import YOLO
 from PIL import Image
 import io
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import StreamingResponse
 
 # === Constants ===
 MODEL_PATH = "yolov8m-seg.pt"
@@ -58,20 +59,20 @@ async def predict(file: UploadFile = File(...)):
 
         print("Image loaded successfully")
         results = model.predict(image, stream=False)
-        output = []
 
-        for r in results:
-            if not hasattr(r, "boxes") or r.boxes is None:
-                continue
-            for cls, conf, box in zip(r.boxes.cls, r.boxes.conf, r.boxes.xyxy):
-                output.append({
-                    "class": model.names[int(cls)],
-                    "confidence": float(conf),
-                    "bbox": box.tolist()
-                })
+        # Draw predictions on the image using .plot()
+        annotated_array = results[0].plot()  # Returns a numpy array (BGR)
 
-        print("Prediction complete, returning results")
-        return {"results": output}
+        # Convert to PIL image (RGB)
+        annotated_image = Image.fromarray(annotated_array[:, :, ::-1])  # BGR to RGB
+
+        # Save annotated image to a bytes buffer
+        buf = io.BytesIO()
+        annotated_image.save(buf, format="JPEG")
+        buf.seek(0)
+
+        print("Returning image with predictions drawn")
+        return StreamingResponse(buf, media_type="image/jpeg")
 
     except Exception as e:
         print(f"Error during prediction: {e}")
